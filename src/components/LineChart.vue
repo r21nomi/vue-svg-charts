@@ -6,6 +6,12 @@
             :viewBox="viewBox"
             @mousemove="onSVGMouseOverStateChanged"
     >
+        <g class="line-chart__dummy-text">
+            <text ref="tooltipText">
+                {{ tooltipLabel }}
+            </text>
+        </g>
+
         <g class="line-chart__gridy">
             <line
                     v-for="(point, index) in gridYPoints"
@@ -80,7 +86,7 @@
             <text
                     :x="tooltipPosition.textX"
                     :y="tooltipPosition.textY"
-                    text-anchor="middle"
+                    text-anchor="start"
                     dominant-baseline="central"
             >
                 {{ tooltipLabel }}
@@ -112,7 +118,7 @@
                 marginWidth: 36,
                 marginHeight: 30,
                 gridYCount: 5,
-                tooltipRectWidth: 84,
+                tooltipRectWidthOffset: 10,
                 tooltipRectHeight: 20,
                 tooltipTextOffsetY: 22
             }
@@ -269,15 +275,36 @@
                         textY: 0
                     }
                 }
+                const firstPoint = this.points[0]
+                const lastPoint = this.points[this.points.length - 1]
+                const textBox = this.$refs.tooltipText.getBBox()
+                let textBoxWidth = textBox.width
+                if (textBoxWidth === 0) textBoxWidth = 100
+
+                const textWidthOffset = this.map(
+                    this.currentData.x,
+                    firstPoint.x,
+                    lastPoint.x,
+                    -this.tooltipRectWidthOffset,
+                    textBoxWidth + this.tooltipRectWidthOffset
+                )
+                const rectWidth = textBoxWidth + this.tooltipRectWidthOffset * 2
+                const tooltipWidthOffset = this.map(
+                    this.currentData.x,
+                    firstPoint.x,
+                    lastPoint.x,
+                    0,
+                    rectWidth
+                )
                 return {
-                    rectX: this.currentData.x - this.tooltipRectWidth / 2,
+                    rectX: this.currentData.x - tooltipWidthOffset,
                     rectY:
                         this.currentData.y -
                         this.tooltipRectHeight / 2 -
                         this.tooltipTextOffsetY,
-                    rectWidth: this.tooltipRectWidth,
+                    rectWidth,
                     rectHeight: this.tooltipRectHeight,
-                    textX: this.currentData.x,
+                    textX: this.currentData.x - textWidthOffset,
                     textY: this.currentData.y - this.tooltipTextOffsetY
                 }
             }
@@ -320,6 +347,9 @@
 <style scoped>
     .line-chart {
         width: 100%;
+    }
+    .line-chart__dummy-text {
+        display: none;
     }
     .line-chart__surface path {
         fill: #999;
